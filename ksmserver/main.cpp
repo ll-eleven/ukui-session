@@ -62,183 +62,20 @@ void IoErrorHandler ( IceConn iceConn)
     the_server->ioError( iceConn );
 }
 
-bool writeTest(QByteArray path)
+
+//extern "C" Q_DECL_EXPORT
+int main( int argc, char* argv[] )
 {
-   path += "/XXXXXX";
-   int fd = mkstemp(path.data());
-   if (fd == -1)
-      return false;
-   if (write(fd, "Hello World\n", 12) == -1)
-   {
-      int save_errno = errno;
-      close(fd);
-      unlink(path.data());
-      errno = save_errno;
-      return false;
-   }
-   close(fd);
-   unlink(path.data());
-   return true;
-}
+//    sanity_check(argc, argv);//命令执行参数检查
 
-void checkComposite()//大概是kwin窗口混成器的检查？
-{
-    if( qgetenv( "KDE_SKIP_ARGB_VISUALS" ) == "1" )
-        return;
-    // thanks to zack rusin and frederik for pointing me in the right direction
-    // for the following bits of X11 code
-    dpy = XOpenDisplay(nullptr); // open default display
-    if (!dpy)
-    {
-        qCCritical(KSMSERVER) << "Cannot connect to the X server";
-        return;
-    }
-
-    int screen = DefaultScreen(dpy);
-    int eventBase, errorBase;
-
-    if (XRenderQueryExtension(dpy, &eventBase, &errorBase))
-    {
-        int nvi;
-        XVisualInfo templ;
-        templ.screen  = screen;
-        templ.depth   = 32;
-        templ.c_class = TrueColor;
-        XVisualInfo *xvi = XGetVisualInfo(dpy, VisualScreenMask |
-                                                VisualDepthMask |
-                                                VisualClassMask,
-                                            &templ, &nvi);
-        for (int i = 0; i < nvi; ++i)
-        {
-            XRenderPictFormat *format = XRenderFindVisualFormat(dpy,
-                                                                xvi[i].visual);
-            if (format->type == PictTypeDirect && format->direct.alphaMask)
-            {
-                visual = xvi[i].visual;
-                colormap = XCreateColormap(dpy, RootWindow(dpy, screen),
-                                            visual, AllocNone);
-
-                XFree(xvi);
-                return;
-            }
-        }
-
-        XFree(xvi);
-
-    }
-    XCloseDisplay( dpy );
-    dpy = nullptr;
-}
-
-void sanity_check( int argc, char* argv[] )
-{
-    QString msg;
-    QByteArray path = qgetenv("HOME");
-    const QByteArray readOnly = qgetenv("KDE_HOME_READONLY");
-    if (path.isEmpty())
-    {
-        msg = i18n("$HOME not set!");
-    }
-    if (msg.isEmpty() && access(path.data(), W_OK))
-    {
-        if (errno == ENOENT)
-            msg = i18n("$HOME directory (%1) does not exist.", QFile::decodeName(path));
-        else if (readOnly.isEmpty())
-            msg = i18n("No write access to $HOME directory (%1).", QFile::decodeName(path));
-    }
-    if (msg.isEmpty() && access(path.data(), R_OK))
-    {
-        if (errno == ENOENT)
-            msg = i18n("$HOME directory (%1) does not exist.", QFile::decodeName(path));
-        else
-            msg = i18n("No read access to $HOME directory (%1).", QFile::decodeName(path));
-    }
-    if (msg.isEmpty() && readOnly.isEmpty() && !writeTest(path))
-    {
-        if (errno == ENOSPC)
-            msg = i18n("$HOME directory (%1) is out of disk space.", QFile::decodeName(path));
-        else
-            msg = i18n("Writing to the $HOME directory (%2) failed with "
-                       "the error '%1'", QString::fromLocal8Bit(strerror(errno)), QFile::decodeName(path));
-    }
-    if (msg.isEmpty())
-    {
-        path = getenv("ICEAUTHORITY");
-        if (path.isEmpty())
-        {
-            path = qgetenv("HOME");
-            path += "/.ICEauthority";
-        }
-    
-        if (access(path.data(), W_OK) && (errno != ENOENT))
-            msg = i18n("No write access to '%1'.", QFile::decodeName(path));
-        else if (access(path.data(), R_OK) && (errno != ENOENT))
-            msg = i18n("No read access to '%1'.", QFile::decodeName(path));
-    }
-    if (msg.isEmpty())
-    {
-        path = getenv("KDETMP");
-        if (path.isEmpty())
-            path = "/tmp";
-        if (!writeTest(path))
-        {
-            if (errno == ENOSPC)
-                msg = i18n("Temp directory (%1) is out of disk space.", QFile::decodeName(path));
-            else
-                msg = i18n("Writing to the temp directory (%2) failed with\n    "
-                           "the error '%1'", QString::fromLocal8Bit(strerror(errno)), QFile::decodeName(path));
-        }
-    }
-    if (msg.isEmpty() && (path != "/tmp"))
-    {
-        path = "/tmp";
-        if (!writeTest(path))
-        {
-            if (errno == ENOSPC)
-                msg = i18n("Temp directory (%1) is out of disk space.", QFile::decodeName(path));
-            else
-                msg = i18n("Writing to the temp directory (%2) failed with\n    "
-                           "the error '%1'", QString::fromLocal8Bit(strerror(errno)), QFile::decodeName(path));
-        }
-    }
-    if (msg.isEmpty())
-    {
-        path += "/.ICE-unix";
-        if (access(path.data(), W_OK) && (errno != ENOENT))
-            msg = i18n("No write access to '%1'.", QFile::decodeName(path));
-        else if (access(path.data(), R_OK) && (errno != ENOENT))
-            msg = i18n("No read access to '%1'.", QFile::decodeName(path));
-    }
-    if (!msg.isEmpty())
-    {
-        const QString msg_pre =
-                i18n("The following installation problem was detected\n"
-                     "while trying to start KDE:") +
-                QStringLiteral("\n\n    ");
-        const QString msg_post = i18n("\n\nKDE is unable to start.\n");
-        fputs(msg_pre.toUtf8().constData(), stderr);
-        fprintf(stderr, "%s", msg.toUtf8().constData());
-        fputs(msg_post.toUtf8().constData(), stderr);
-
-        QApplication a(argc, argv);
-        const QString qmsg = msg_pre + msg + msg_post;
-        KMessageBox::error(nullptr, qmsg, i18n("Plasma Workspace installation problem!"));
-        exit(255);
-    }
-}
-
-extern "C" Q_DECL_EXPORT int kdemain( int argc, char* argv[] )
-{
-    sanity_check(argc, argv);
-
-    putenv((char*)"SESSION_MANAGER=");
-    checkComposite();
+//    putenv((char*)"SESSION_MANAGER=");
+//    checkComposite();//kwin混成器检查
 
     // force xcb QPA plugin as ksmserver is very X11 specific
     const QByteArray origQpaPlatform = qgetenv("QT_QPA_PLATFORM");
     qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("xcb"));
 
-    QQuickWindow::setDefaultAlphaBuffer(true);
+//    QQuickWindow::setDefaultAlphaBuffer(true);
     QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
     QApplication *a = new QApplication(argc, argv);
 
@@ -255,7 +92,7 @@ extern "C" Q_DECL_EXPORT int kdemain( int argc, char* argv[] )
 
     fcntl(ConnectionNumber(QX11Info::display()), F_SETFD, 1);
 
-    a->setQuitOnLastWindowClosed(false); // #169486
+//    a->setQuitOnLastWindowClosed(false); // #169486
 
     QCommandLineParser parser;
     parser.setApplicationDescription(i18n(description));
@@ -294,7 +131,7 @@ extern "C" Q_DECL_EXPORT int kdemain( int argc, char* argv[] )
      * does nothing on this platform, as here the default is reversed)
      */
     if (!only_local) {
-        qWarning(KSMSERVER, "--nolocal is not supported on your platform. Sorry.");
+        qWarning("--nolocal is not supported on your platform. Sorry.");
     }
     only_local = false;
 #endif
@@ -335,7 +172,7 @@ extern "C" Q_DECL_EXPORT int kdemain( int argc, char* argv[] )
 
 //    server->setupShortcuts();
     int ret = a->exec();
-    kde_running.release(); // needs to be done before QApplication destruction
+//    kde_running.release(); // needs to be done before QApplication destruction
     delete a;
     return ret;
 }

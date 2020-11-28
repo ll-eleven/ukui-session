@@ -115,9 +115,9 @@ public:
     void restoreSession();
 //    void restoreSession( const QString &sessionName );
     void startDefaultSession();
-    void shutdown( KWorkSpace::ShutdownConfirm confirm,
-                   KWorkSpace::ShutdownType sdtype,
-                   KWorkSpace::ShutdownMode sdmode );
+    void shutdown( int a,
+                   int b,
+                   int c);
 
 //    void setupShortcuts();
 
@@ -180,7 +180,7 @@ private:
     void performLegacySessionSave();
     void storeLegacySession( KConfig* config );
     void restoreLegacySession( KConfig* config );
-    void restoreLegacySessionInternal( KConfigGroup* config, char sep = ',' );
+    void restoreLegacySessionInternal( KConfig* config, char sep = ',' );
     QStringList windowWmCommand(WId w);
     QString windowWmClientMachine(WId w);
     WId windowWmClientLeader(WId w);

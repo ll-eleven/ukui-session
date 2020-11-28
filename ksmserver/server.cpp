@@ -92,6 +92,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include <startup_interface.h>
 #include <qstandardpaths.h>
 #include <QFileInfo>
+#include <QDir>
 
 //#include "kscreenlocker_interface.h"
 //#include "kwinsession_interface.h"
@@ -139,14 +140,14 @@ KProcess* KSMServer::startApplication( const QStringList& cmd, const QString& cl
         process->start();
         return process;
     } else {
-        int n = command.count();
-        org::kde::KLauncher klauncher(QStringLiteral("org.kde.klauncher5"),
-                                      QStringLiteral("/KLauncher"), QDBusConnection::sessionBus());
-        QString app = command[0];
-        QStringList argList;
-        for ( int i=1; i < n; i++)
-           argList.append( command[i]);
-        klauncher.exec_blind(app, argList );
+//        int n = command.count();
+//        org::kde::KLauncher klauncher(QStringLiteral("org.kde.klauncher5"),
+//                                      QStringLiteral("/KLauncher"), QDBusConnection::sessionBus());
+//        QString app = command[0];
+//        QStringList argList;
+//        for ( int i=1; i < n; i++)
+//           argList.append( command[i]);
+//        klauncher.exec_blind(app, argList );
         return nullptr;
     }
 }
@@ -219,10 +220,8 @@ void KSMSaveYourselfRequestProc (
 )
 {
     if ( shutdown ) {
-        QStringList args = [];
-        QString command = "ukui-session-tools";
-        qDebug() << "Start ukui module: " << command << "args: " << args;
-        QProcess::start(command, args);
+        QStringList args;
+//        QProcess::start("ukui-session-tools", args);
 //        the_server->shutdown( fast ?
 //                              KWorkSpace::ShutdownConfirmNo :
 //                              KWorkSpace::ShutdownConfirmDefault,
@@ -605,7 +604,7 @@ extern "C" int _IceTransNoListen(const char * protocol);
 KSMServer::KSMServer( const QString& windowManager, InitFlags flags )
   : wmProcess( nullptr )
   , sessionGroup( QStringLiteral( "" ) )
-  , m_kwinInterface(new OrgKdeKWinSessionInterface(QStringLiteral("org.kde.KWin"), QStringLiteral("/Session"), QDBusConnection::sessionBus(), this))
+//  , m_kwinInterface(new OrgKdeKWinSessionInterface(QStringLiteral("org.kde.KWin"), QStringLiteral("/Session"), QDBusConnection::sessionBus(), this))
   , sockets{ -1, -1 }
 {
 //    if (!flags.testFlag(InitFlag::NoLockScreen)) {
@@ -654,23 +653,23 @@ KSMServer::KSMServer( const QString& windowManager, InitFlags flags )
                          (SmPointer) this,
                          HostBasedAuthProc, 256, errormsg ) ) {
 
-        qCWarning(KSMSERVER, "KSMServer: could not register XSM protocol");
+        qWarning("KSMServer: could not register XSM protocol");
     }
 
     if (!IceListenForConnections (&numTransports, &listenObjs,
                                   256, errormsg))
     {
-        qCWarning(KSMSERVER, "KSMServer: Error listening for connections: %s", errormsg);
-        qCWarning(KSMSERVER, "KSMServer: Aborting.");
+        qWarning("KSMServer: Error listening for connections: %s", errormsg);
+        qWarning("KSMServer: Aborting.");
         exit(1);
     }
 
     {
         // publish available transports.
         QByteArray fName = QFile::encodeName(QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)
-                                             + QDir::separator()
+//                                             + QDir::separator()
                                              + QStringLiteral("KSMserver"));
-        qCDebug(KSMSERVER) << fName;
+        qDebug() << fName;
         QString display = QString::fromLocal8Bit(::getenv("DISPLAY"));
         // strip the screen number from the display
         display.remove(QRegExp(QStringLiteral("\\.[0-9]+$")));
@@ -685,8 +684,8 @@ KSMServer::KSMServer( const QString& windowManager, InitFlags flags )
         f = ::fopen(fName.data(), "w+");
         if (!f)
         {
-            qCWarning(KSMSERVER, "KSMServer: cannot open %s: %s", fName.data(), strerror(errno));
-            qCWarning(KSMSERVER, "KSMServer: Aborting.");
+            qWarning("KSMServer: cannot open %s: %s", fName.data(), strerror(errno));
+            qWarning("KSMServer: Aborting.");
             exit(1);
         }
         char* session_manager = IceComposeNetworkIdList(numTransports, listenObjs);
@@ -695,11 +694,11 @@ KSMServer::KSMServer( const QString& windowManager, InitFlags flags )
         setenv( "SESSION_MANAGER", session_manager, true  );
 
         // Pass env. var to kdeinit.
-        org::kde::KLauncher klauncher( QStringLiteral( "org.kde.klauncher5" ), QStringLiteral( "/KLauncher" ), QDBusConnection::sessionBus());
-        klauncher.setLaunchEnv( QStringLiteral( "SESSION_MANAGER" ), QString::fromLocal8Bit( (const char*) session_manager ) );
+//        org::kde::KLauncher klauncher( QStringLiteral( "org.kde.klauncher5" ), QStringLiteral( "/KLauncher" ), QDBusConnection::sessionBus());
+//        klauncher.setLaunchEnv( QStringLiteral( "SESSION_MANAGER" ), QString::fromLocal8Bit( (const char*) session_manager ) );
 
-        org::kde::Startup startup(QStringLiteral("org.kde.Startup"), QStringLiteral("/Startup"), QDBusConnection::sessionBus());
-        startup.updateLaunchEnv( QStringLiteral( "SESSION_MANAGER" ), QString::fromLocal8Bit( (const char*) session_manager ) );
+//        org::kde::Startup startup(QStringLiteral("org.kde.Startup"), QStringLiteral("/Startup"), QDBusConnection::sessionBus());
+//        startup.updateLaunchEnv( QStringLiteral( "SESSION_MANAGER" ), QString::fromLocal8Bit( (const char*) session_manager ) );
 
         free(session_manager);
     }
@@ -855,9 +854,9 @@ void KSMServer::newConnection( int /*socket*/ )
 
     if (cstatus != IceConnectAccepted) {
         if (cstatus == IceConnectIOError)
-            qCDebug(KSMSERVER) << "IO error opening ICE Connection!";
+            qDebug() << "IO error opening ICE Connection!";
         else
-            qCDebug(KSMSERVER) << "ICE Connection rejected!";
+            qDebug() << "ICE Connection rejected!";
         (void )IceCloseConnection (iceConn);
         return;
     }
@@ -1043,10 +1042,10 @@ void KSMServer::wmProcessChange()
     }
     if( wmProcess->state() == QProcess::NotRunning )
     { // wm failed to launch for some reason, go with kwin instead
-        qCWarning(KSMSERVER) << "Window manager" << wm << "failed to launch";
+        qWarning() << "Window manager" << wm << "failed to launch";
         if( wm == QLatin1String( KWIN_BIN ) )
             return; // uhoh, kwin itself failed
-        qCDebug(KSMSERVER) << "Launching KWin";
+        qDebug() << "Launching KWin";
         wm = QStringLiteral( KWIN_BIN );
         wmCommands = ( QStringList() << QStringLiteral( KWIN_BIN ) );
         // launch it
@@ -1183,27 +1182,25 @@ void KSMServer::startupDone()
 
 void KSMServer::defaultLogout()
 {
-    shutdown(KWorkSpace::ShutdownConfirmYes, KWorkSpace::ShutdownTypeDefault, KWorkSpace::ShutdownModeDefault);
+    qDebug()<<"do nothing now .";
 }
 
 void KSMServer::logoutWithoutConfirmation()
 {
-    shutdown(KWorkSpace::ShutdownConfirmNo, KWorkSpace::ShutdownTypeNone, KWorkSpace::ShutdownModeDefault);
+    qDebug()<<"do nothing now .";
 }
 
 void KSMServer::haltWithoutConfirmation()
 {
-    shutdown(KWorkSpace::ShutdownConfirmNo, KWorkSpace::ShutdownTypeHalt, KWorkSpace::ShutdownModeDefault);
+    qDebug()<<"do nothing now .";
 }
 
 void KSMServer::rebootWithoutConfirmation()
 {
-    shutdown(KWorkSpace::ShutdownConfirmNo, KWorkSpace::ShutdownTypeReboot, KWorkSpace::ShutdownModeDefault);
+    qDebug()<<"do nothing now .";
 }
 
 void KSMServer::openSwitchUserDialog()
 {
-    //this method exists only for compatibility. Users should ideally call this directly
-    OrgKdeScreensaverInterface iface(QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("/ScreenSaver"), QDBusConnection::sessionBus());
-    iface.SwitchUser();
+    qDebug()<<"do nothing now .";
 }

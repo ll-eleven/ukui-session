@@ -210,10 +210,10 @@ void ModuleManager::startup()
     for (XdgDesktopFileList::const_iterator i = mInitialization.constBegin(); i != mInitialization.constEnd(); ++i) {
         startProcess(*i, true);
     }
-    QTimer::singleShot(1000, this, [&]()
-    {
-        qDebug() << "Start window manager: " << mWindowManager.name();
-        startProcess(mWindowManager, true);
+//    QTimer::singleShot(1000, this, [&]()
+//    {
+//        qDebug() << "Start window manager: " << mWindowManager.name();
+//        startProcess(mWindowManager, true);
 
         QTimer::singleShot(1000, this, [&]()
         {
@@ -230,7 +230,7 @@ void ModuleManager::startup()
             connect(timer,SIGNAL(timeout()),this,SLOT(timerUpdate()));
             timer->start(3000);
         });
-    });
+//    });
 }
 
 void ModuleManager::timerUpdate(){

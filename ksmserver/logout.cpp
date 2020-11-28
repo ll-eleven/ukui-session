@@ -29,8 +29,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************/
 
 
-#include <config-workspace.h>
-#include <config-unix.h> // HAVE_LIMITS_H
+//#include <config-workspace.h>
+//#include <config-unix.h> // HAVE_LIMITS_H
 #include <config-ksmserver.h>
 
 //#include <ksmserver_debug.h>
@@ -88,12 +88,12 @@ enum KWinSessionState {
 void KSMServer::logout( int confirm, int sdtype, int sdmode )
 {
     // KDE5: remove me
-    if (sdtype == KWorkSpace::ShutdownTypeLogout)
-        sdtype = KWorkSpace::ShutdownTypeNone;
+    if (sdtype == 0)
+        sdtype = 0;
 
-    shutdown( (KWorkSpace::ShutdownConfirm)confirm,
-            (KWorkSpace::ShutdownType)sdtype,
-            (KWorkSpace::ShutdownMode)sdmode );
+    shutdown( (int)confirm,
+            (int)sdtype,
+            (int)sdmode );
 }
 
 bool KSMServer::closeSession()
@@ -111,7 +111,8 @@ bool KSMServer::canShutdown()
     config->reparseConfiguration(); // config may have changed in the KControl module
     KConfigGroup cg( config, "General");
 
-    return cg.readEntry( "offerShutdown", true ) && KDisplayManager().canShutdown();
+    return false;
+//    return cg.readEntry( "offerShutdown", true ) && KDisplayManager().canShutdown();
 }
 
 bool KSMServer::isShuttingDown() const
@@ -123,6 +124,9 @@ bool KSMServer::isShuttingDown() const
 //void KSMServer::shutdown( KWorkSpace::ShutdownConfirm confirm,
 //    KWorkSpace::ShutdownType sdtype, KWorkSpace::ShutdownMode sdmode )
 //{}
+void KSMServer::shutdown(int a,int b,int c){
+    qDebug()<<"shutdowm method active";
+}
 
 void KSMServer::performLogout()
 {
@@ -133,7 +137,7 @@ void KSMServer::performLogout()
         QTimer::singleShot(1000, this, &KSMServer::performLogout);
     }
 
-    auto reply = m_kwinInterface->setState(KWinSessionState::Saving);
+//    auto reply = m_kwinInterface->setState(KWinSessionState::Saving);
     // we don't need to block as we wait for kwin to handle it's session 1
     // before messaging the clients
 
@@ -361,13 +365,13 @@ void KSMServer::cancelShutdown( KSMClient* c )
     }
     state = Idle;
 
-    m_kwinInterface->setState(KWinSessionState::Normal);
+    //m_kwinInterface->setState(KWinSessionState::Normal);
 
-    if (m_performLogoutCall.type() == QDBusMessage::MethodCallMessage) {
-        auto reply = m_performLogoutCall.createReply(false);
-        QDBusConnection::sessionBus().send(reply);
-        m_performLogoutCall = QDBusMessage();
-    }
+//    if (m_performLogoutCall.type() == QDBusMessage::MethodCallMessage) {
+//        auto reply = m_performLogoutCall.createReply(false);
+//        QDBusConnection::sessionBus().send(reply);
+//        m_performLogoutCall = QDBusMessage();
+//    }
     emit logoutCancelled();
 }
 
@@ -474,7 +478,7 @@ void KSMServer::startKilling()
     // kill all clients
     state = Killing;
 
-    m_kwinInterface->setState(KWinSessionState::Quitting);
+//    m_kwinInterface->setState(KWinSessionState::Quitting);
 
     foreach( KSMClient* c, clients ) {
         if( isWM( c )) // kill the WM as the last one in order to reduce flicker
@@ -544,7 +548,7 @@ void KSMServer::killingCompleted()
 {
     if (m_performLogoutCall.type() == QDBusMessage::MethodCallMessage) {
         auto reply = m_performLogoutCall.createReply(true);
-        QDBusConnection::sessionBus().send(reply);
+//        QDBusConnection::sessionBus().send(reply);
         m_performLogoutCall = QDBusMessage();
     }
     qApp->quit();
@@ -553,7 +557,7 @@ void KSMServer::killingCompleted()
 void KSMServer::timeoutQuit()
 {
     foreach( KSMClient* c, clients ) {
-        qCWarning(KSMSERVER) << "SmsDie timeout, client " << c->program() << "(" << c->clientId() << ")" ;
+        qWarning() << "SmsDie timeout, client " << c->program() << "(" << c->clientId() << ")" ;
     }
     killWM();
 }
@@ -561,7 +565,7 @@ void KSMServer::timeoutQuit()
 void KSMServer::timeoutWMQuit()
 {
     if( state == KillingWM ) {
-        qCWarning(KSMSERVER) << "SmsDie WM timeout" ;
+        qWarning() << "SmsDie WM timeout" ;
     }
     killingCompleted();
 }

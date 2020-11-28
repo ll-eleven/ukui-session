@@ -1,5 +1,5 @@
 include(CheckLibraryExists)
-add_definitions(-DTRANSLATION_DOMAIN=\"ksmserver\")
+#add_definitions(-DTRANSLATION_DOMAIN=\"ksmserver\")
 
 find_package(ECM ${KF5_MIN_VERSION} REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
@@ -12,9 +12,20 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
 check_library_exists(ICE _IceTransNoListen "" HAVE__ICETRANSNOLISTEN)
 configure_file(config-ksmserver.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-ksmserver.h)
 
-add_definitions("-DQT_NO_CAST_FROM_ASCII -DQT_NO_CAST_TO_ASCII")
-add_definitions(-DQT_NO_NARROWING_CONVERSIONS_IN_CONNECT)
-add_definitions(-DQT_NO_URL_CAST_FROM_STRING)
+
+find_package(X11)
+
+		#if(X11_FOUND)
+find_package(XCB MODULE REQUIRED COMPONENTS XCB RANDR)
+		#  if(NOT X11_SM_FOUND)
+		#    message(FATAL_ERROR "\nThe X11 Session Management (SM) development package could not be found.\nPlease install libSM.\n")
+		#  endif(NOT X11_SM_FOUND)
+		#  find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS X11Extras)
+		#endif()
+
+		#add_definitions("-DQT_NO_CAST_FROM_ASCII -DQT_NO_CAST_TO_ASCII")
+		#add_definitions(-DQT_NO_NARROWING_CONVERSIONS_IN_CONNECT)
+		#add_definitions(-DQT_NO_URL_CAST_FROM_STRING)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
@@ -70,6 +81,9 @@ target_link_libraries(ksmserver
     KF5::Package
     KF5::WindowSystem
     Qt5::Concurrent
+    #    -nostartfiles
+    #    -nostdlib
+    #    -lm
 )
 
 #install(TARGETS kdeinit_ksmserver ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

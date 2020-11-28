@@ -113,16 +113,16 @@ void KSMServer::performLegacySessionSave()
         WId leader = windowWmClientLeader( *it );
         if (!legacyWindows.contains(leader) && windowSessionId( *it, leader ).isEmpty()) {
             SMType wtype = SM_WMCOMMAND;
-            int nprotocols = 0;
-            Atom *protocols = nullptr;
-            if( XGetWMProtocols(QX11Info::display(), leader, &protocols, &nprotocols)) {
-                for (int i=0; i<nprotocols; i++)
-                    if (protocols[i] == wm_save_yourself) {
-                        wtype = SM_WMSAVEYOURSELF;
-                        break;
-                    }
-                XFree((void*) protocols);
-            }
+//            int nprotocols = 0;
+//            Atom *protocols = nullptr;
+//            if( XGetWMProtocols(QX11Info::display(), leader, &protocols, &nprotocols)) {
+//                for (int i=0; i<nprotocols; i++)
+//                    if (protocols[i] == wm_save_yourself) {
+//                        wtype = SM_WMSAVEYOURSELF;
+//                        break;
+//                    }
+//                XFree((void*) protocols);
+//            }
             SMData data;
             data.type = wtype;
             XClassHint classHint;
@@ -252,8 +252,8 @@ Restores legacy session management data (i.e. restart applications)
 void KSMServer::restoreLegacySession( KConfig* config )
 {
     if( config->hasGroup( QStringLiteral( "Legacy" ) + sessionGroup )) {
-        KConfigGroup group( config, QStringLiteral( "Legacy" ) + sessionGroup );
-        restoreLegacySessionInternal( &group );
+//        KConfigGroup group( config, QStringLiteral( "Legacy" ) + sessionGroup );
+        restoreLegacySessionInternal( config );
     } else if( wm == QLatin1String( "kwin" ) ) { // backwards comp. - get it from kwinrc
         KConfigGroup group( config, sessionGroup );
         int count =  group.readEntry( "count", 0 );
@@ -271,8 +271,8 @@ void KSMServer::restoreLegacySession( KConfig* config )
                     if( it != restartCommand.constEnd()) {
                         KConfig cfg( QStringLiteral( "session/" ) + wm +
                                      QLatin1Char( '_' ) + (*it) );
-                        KConfigGroup group(&cfg, "LegacySession");
-                        restoreLegacySessionInternal( &group, ' ' );
+//                        KConfigGroup group(&cfg, "LegacySession");
+                        restoreLegacySessionInternal( &cfg, ' ' );
                     }
                 }
             }
@@ -280,22 +280,23 @@ void KSMServer::restoreLegacySession( KConfig* config )
     }
 }
 
-void KSMServer::restoreLegacySessionInternal( KConfigGroup* config, char sep )
+void KSMServer::restoreLegacySessionInternal( KConfig* config, char sep )
 {
-    int count = config->readEntry( "count",0 );
-    for ( int i = 1; i <= count; i++ ) {
-        QString n = QString::number(i);
-        QStringList wmCommand = (sep == ',') ?
-                config->readEntry( QStringLiteral("command")+n, QStringList() ) :
-                KShell::splitArgs( config->readEntry( QStringLiteral("command")+n, QString() ) ); // close enough(?)
-        if( wmCommand.isEmpty())
-            continue;
-        if( isWM( wmCommand.first()))
-            continue;
-        startApplication( wmCommand,
-                        config->readEntry( QStringLiteral("clientMachine")+n, QString() ),
-                        config->readEntry( QStringLiteral("userId")+n, QString() ));
-    }
+    qDebug()<<"do not save right now.";
+//    int count = config->readEntry( "count",0 );
+//    for ( int i = 1; i <= count; i++ ) {
+//        QString n = QString::number(i);
+//        QStringList wmCommand = (sep == ',') ?
+//                config->readEntry( QStringLiteral("command")+n, QStringList() ) :
+//                KShell::splitArgs( config->readEntry( QStringLiteral("command")+n, QString() ) ); // close enough(?)
+//        if( wmCommand.isEmpty())
+//            continue;
+//        if( isWM( wmCommand.first()))
+//            continue;
+//        startApplication( wmCommand,
+//                        config->readEntry( QStringLiteral("clientMachine")+n, QString() ),
+//                        config->readEntry( QStringLiteral("userId")+n, QString() ));
+//    }
 }
 
 static QByteArray getQCStringProperty(WId w, Atom prop)
