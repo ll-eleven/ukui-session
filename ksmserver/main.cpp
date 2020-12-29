@@ -147,6 +147,7 @@ int main( int argc, char* argv[] )
         flags |= KSMServer::InitFlag::NoLockScreen;
     }
 
+    qDebug()<<"初始化 ksmserver";
     KSMServer *server = new KSMServer( wm, flags);
 
     // for the KDE-already-running check in startkde
@@ -166,7 +167,8 @@ int main( int argc, char* argv[] )
 //    else if ( loginMode == QLatin1String( "restoreSavedSession" ) )
 //        server->restoreSession( QStringLiteral( SESSION_BY_USER ) );
 //    else
-        server->startDefaultSession();
+    qDebug()<<"main 函数 server->startDefaultSession();";
+    server->startDefaultSession();
 
 //    KDBusService service(KDBusService::Unique);
 

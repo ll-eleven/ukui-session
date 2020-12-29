@@ -186,6 +186,7 @@ Status KSMRegisterClientProc (
     char *              previousId
 )
 {
+    qDebug()<<"KSMRegisterClientProc called";
     KSMClient* client = (KSMClient*) managerData;
     client->registerClient( previousId );
     return 1;
@@ -197,6 +198,7 @@ void KSMInteractRequestProc (
     int                 dialogType
 )
 {
+    qDebug()<<"KSMInteractRequestProc called";
     the_server->interactRequest( (KSMClient*) managerData, dialogType );
 }
 
@@ -206,6 +208,7 @@ void KSMInteractDoneProc (
     Bool                        cancelShutdown
 )
 {
+    qDebug()<<"KSMInteractDoneProc called";
     the_server->interactDone( (KSMClient*) managerData, cancelShutdown );
 }
 
@@ -219,6 +222,7 @@ void KSMSaveYourselfRequestProc (
     Bool                global
 )
 {
+    qDebug()<<"KSMSaveYourselfRequestProc called";
     if ( shutdown ) {
         QStringList args;
 //        QProcess::start("ukui-session-tools", args);
@@ -240,6 +244,7 @@ void KSMSaveYourselfPhase2RequestProc (
     SmPointer           managerData
 )
 {
+    qDebug()<<"KSMSaveYourselfPhase2RequestProc called";
     the_server->phase2Request( (KSMClient*) managerData );
 }
 
@@ -249,6 +254,7 @@ void KSMSaveYourselfDoneProc (
     Bool                success
 )
 {
+    qDebug()<<"KSMSaveYourselfDoneProc called";
     the_server->saveYourselfDone( (KSMClient*) managerData, success );
 }
 
@@ -259,6 +265,7 @@ void KSMCloseConnectionProc (
     char **             reasonMsgs
 )
 {
+    qDebug()<<"KSMCloseConnectionProc called";
     the_server->deleteClient( ( KSMClient* ) managerData );
     if ( count )
         SmFreeReasons( count, reasonMsgs );
@@ -275,6 +282,7 @@ void KSMSetPropertiesProc (
     SmProp **           props
 )
 {
+    qDebug()<<"KSMSetPropertiesProc called";
     KSMClient* client = ( KSMClient* ) managerData;
     for ( int i = 0; i < numProps; i++ ) {
         SmProp *p = client->property( props[i]->name );
@@ -299,6 +307,7 @@ void KSMDeletePropertiesProc (
     char **             propNames
 )
 {
+    qDebug()<<"KSMDeletePropertiesProc called";
     KSMClient* client = ( KSMClient* ) managerData;
     for ( int i = 0; i < numProps; i++ ) {
         SmProp *p = client->property( propNames[i] );
@@ -314,6 +323,7 @@ void KSMGetPropertiesProc (
     SmPointer           managerData
 )
 {
+    qDebug()<<"KSMGetPropertiesProc called";
     KSMClient* client = ( KSMClient* ) managerData;
     SmProp** props = new SmProp*[client->properties.count()];
     int i = 0;
@@ -614,6 +624,7 @@ KSMServer::KSMServer( const QString& windowManager, InitFlags flags )
 //        }
 //    }
 
+    qDebug()<<"Init KSMServer class.初始化刚进来";
     if(::socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, sockets) != 0)
         qFatal("Could not create socket pair, error %d (%s)", errno, strerror(errno));
     wake_up_socket = sockets[0];
@@ -621,7 +632,7 @@ KSMServer::KSMServer( const QString& windowManager, InitFlags flags )
     qApp->connect(n, &QSocketNotifier::activated, &QApplication::quit);
 
 //    new KSMServerInterfaceAdaptor( this );
-    QDBusConnection::sessionBus().registerObject(QStringLiteral("/KSMServer"), this);
+//    QDBusConnection::sessionBus().registerObject(QStringLiteral("/KSMServer"), this);
     the_server = this;
     clean = false;
 
@@ -648,26 +659,28 @@ KSMServer::KSMServer( const QString& windowManager, InitFlags flags )
 #endif
 
     char        errormsg[256];
+    qDebug()<<"do SmsInitialize";
     if (!SmsInitialize ( (char*) KSMVendorString, (char*) KSMReleaseString,
                          KSMNewClientProc,
                          (SmPointer) this,
                          HostBasedAuthProc, 256, errormsg ) ) {
-
+        qDebug()<<"do SmsInitialize 失败";
         qWarning("KSMServer: could not register XSM protocol");
     }
 
+    qDebug()<<"do IceListenForConnections";
     if (!IceListenForConnections (&numTransports, &listenObjs,
                                   256, errormsg))
     {
         qWarning("KSMServer: Error listening for connections: %s", errormsg);
-        qWarning("KSMServer: Aborting.");
+        qDebug()<<"do IceListenForConnections error";
         exit(1);
     }
 
     {
         // publish available transports.
         QByteArray fName = QFile::encodeName(QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)
-//                                             + QDir::separator()
+                                             + QDir::separator()
                                              + QStringLiteral("KSMserver"));
         qDebug() << fName;
         QString display = QString::fromLocal8Bit(::getenv("DISPLAY"));
@@ -731,6 +744,7 @@ KSMServer::KSMServer( const QString& windowManager, InitFlags flags )
     connect(qApp, &QApplication::aboutToQuit, this, &KSMServer::cleanUp);
 
     setupXIOErrorHandler();
+    qDebug()<<"初始化结束。";
 }
 
 KSMServer::~KSMServer()
